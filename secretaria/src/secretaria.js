@@ -13,12 +13,12 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY });
 const contents = [
     {
         role: "user",
-        parts: [{ text: "Que dia é hoje?" }]
+        parts: [{ text: "Remarque os eventos que eu tenho hoje para 1h mais tarde" }]
     }
 ];
 
 var response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-pro",
     contents: contents,
     config: {
         tools: [
@@ -29,39 +29,42 @@ var response = await ai.models.generateContent({
     }
 });
 
-const functionCall = response.candidates[0].content.parts[0].functionCall;
+while (response.functionCalls) {
+    const functionCall = response.candidates[0].content.parts[0].functionCall;
 
-const functionToExecute = functionCall.name;
-const functionParameters = functionCall.args;
+    const functionToExecute = functionCall.name;
+    const functionParameters = functionCall.args;
 
-const fn = allFunctions[functionToExecute];
+    console.log(`**Chamando função ${functionToExecute}`);
 
-const result = fn(functionParameters);
+    const fn = allFunctions[functionToExecute];
 
-const functionResponse = {
-    role: "user",
-    parts: [{
-        functionResponse: {
-            name: functionToExecute,
-            response: { result: result }
+    const result = fn(functionParameters);
+
+    const functionResponse = {
+        role: "user",
+        parts: [{
+            functionResponse: {
+                name: functionToExecute,
+                response: { result: result }
+            }
+        }]
+    }
+
+    contents.push(functionResponse);
+
+    response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: contents,
+        config: {
+            tools: [
+                {
+                    functionDeclarations: allDeclarations
+                }
+            ]
         }
-    }]
+    });
 }
 
-//console.log(result);
-
-contents.push(functionResponse);
-
-response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: contents,
-    config: {
-        tools: [
-            {
-                functionDeclarations: allDeclarations
-            }
-        ]
-    }
-});
 
 console.log(response.candidates[0].content.parts[0]);
