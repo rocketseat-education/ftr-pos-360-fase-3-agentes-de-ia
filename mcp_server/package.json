@@ -28,7 +28,8 @@
     "test": ""
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.21.1"
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
