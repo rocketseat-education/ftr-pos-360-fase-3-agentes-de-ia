@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import { allDefinitions } from "./tools/calendar.js"
 
 const server = new McpServer({
     name: "secretaria",
@@ -10,23 +10,14 @@ const server = new McpServer({
     }
 });
 
-server.tool(
-    "getTodayDate",
-    "Retorna a data de hoje",
-    {
-        locale: z.string().describe("Lugar onde você quer saber a data")
-    },
-    async ({ locale }) => {
-        const resultado = "01-05-2025";
-
-        return {
-            content: [{
-                type: "text",
-                text: resultado
-            }]
-        }
-    }
-);
+for (let definition of allDefinitions){
+    server.tool(
+        definition.declaration.name,
+        definition.declaration.description,
+        definition.declaration.parameters ?? {},
+        definition.function
+    )
+}
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
