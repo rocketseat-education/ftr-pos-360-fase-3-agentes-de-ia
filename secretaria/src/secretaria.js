@@ -2,6 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { allDefinitions as calendarDefinitions } from "./tools/calendar.js";
 import { allDefinitions as emailDefinitions } from "./tools/email.js";
+import readline from "readline";
+
 dotenv.config();
 
 const allDefinitions = calendarDefinitions.concat(emailDefinitions);
@@ -10,51 +12,25 @@ const allFunctions = Object.fromEntries(allDefinitions.map(def => [def.declarati
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY });
 
-const contents = [
-    {
-        role: "user",
-        parts: [{ text: "Remarque os eventos que eu tenho hoje para 1h mais tarde" }]
-    }
-];
+const contents = [];
 
-var response = await ai.models.generateContent({
-    model: "gemini-2.5-pro",
-    contents: contents,
-    config: {
-        tools: [
-            {
-                functionDeclarations: allDeclarations
-            }
-        ]
-    }
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-while (response.functionCalls) {
-    const functionCall = response.candidates[0].content.parts[0].functionCall;
+while (true) {
+    const query = await new Promise(resolve => {
+        rl.question("Você: ", resolve);
+    });
 
-    const functionToExecute = functionCall.name;
-    const functionParameters = functionCall.args;
-
-    console.log(`**Chamando função ${functionToExecute}`);
-
-    const fn = allFunctions[functionToExecute];
-
-    const result = fn(functionParameters);
-
-    const functionResponse = {
+    contents.push({
         role: "user",
-        parts: [{
-            functionResponse: {
-                name: functionToExecute,
-                response: { result: result }
-            }
-        }]
-    }
+        parts: [{ text: query }]
+    });
 
-    contents.push(functionResponse);
-
-    response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+    var response = await ai.models.generateContent({
+        model: "gemini-2.5-pro",
         contents: contents,
         config: {
             tools: [
@@ -64,7 +40,47 @@ while (response.functionCalls) {
             ]
         }
     });
+
+    while (response.functionCalls) {
+        
+
+        for (const func of response.functionCalls) {
+            const functionToExecute = func.name;
+            const functionParameters = func.args;
+
+            console.log(`**Chamando função ${functionToExecute}`);
+
+            const fn = allFunctions[functionToExecute];
+
+            const result = fn(functionParameters);
+
+            const functionResponse = {
+                role: "user",
+                parts: [{
+                    functionResponse: {
+                        name: functionToExecute,
+                        response: { result: result }
+                    }
+                }]
+            }
+
+            contents.push(functionResponse);
+        }
+
+
+        response = await ai.models.generateContent({
+            model: "gemini-2.5-pro",
+            contents: contents,
+            config: {
+                tools: [
+                    {
+                        functionDeclarations: allDeclarations
+                    }
+                ]
+            }
+        });
+    }
+
+
+    console.log("IA: ", response.candidates[0].content.parts[0].text);
 }
-
-
-console.log(response.candidates[0].content.parts[0]);
