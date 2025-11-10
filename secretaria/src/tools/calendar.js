@@ -164,6 +164,6 @@ const rescheduleEvent = {
     }
 }
 
-const allFunctions = [getTodayDate, getEvents, scheduleEvent, rescheduleEvent];
+const allDefinitions = [getTodayDate, getEvents, scheduleEvent, rescheduleEvent];
 
-export { allFunctions };
+export { allDefinitions };
