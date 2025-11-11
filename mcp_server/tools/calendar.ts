@@ -94,7 +94,9 @@ const getEvents: Tool = {
         type: "text",
         text: JSON.stringify(events)
       }],
-      structuredContent: events
+      structuredContent: {
+        events: events
+      }
     }
   },
   declaration: {
@@ -116,6 +118,7 @@ const scheduleEvent: Tool = {
     });
 
     calendar[date] = eventList;
+
     return {
       content: [{
         type: "text",

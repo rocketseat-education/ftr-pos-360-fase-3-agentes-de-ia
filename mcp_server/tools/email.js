@@ -41,7 +41,9 @@ const getEmails = {
                     type: "text",
                     text: JSON.stringify(inbox)
                 }],
-            structuredContent: inbox
+            structuredContent: {
+                inbox: inbox
+            }
         };
     },
     declaration: {

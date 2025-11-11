@@ -80,7 +80,9 @@ const getEvents = {
                     type: "text",
                     text: JSON.stringify(events)
                 }],
-            structuredContent: events
+            structuredContent: {
+                events: events
+            }
         };
     },
     declaration: {
