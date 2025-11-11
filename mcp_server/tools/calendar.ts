@@ -1,5 +1,5 @@
-import { ZodRawShape } from "zod";
 import { z } from "zod";
+import { type Tool } from "./interfaces.js";
 
 interface Event {
   title: string,
@@ -68,15 +68,6 @@ const calendar: Calendar = {
     "time": "14:00",
     "attendees": ["Carlos Mendes", "Mariana Costa", "Lucas Almeida"]
   }]
-}
-
-interface Tool {
-  function: (args: any) => any,
-  declaration: {
-    name: string,
-    description: string,
-    parameters?: ZodRawShape
-  }
 }
 
 const getTodayDate: Tool = {

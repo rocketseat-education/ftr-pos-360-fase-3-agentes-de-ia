@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { allDefinitions } from "./tools/calendar.js";
+import { allDefinitions as calendarDefinitions } from "./tools/calendar.js";
+import { allDefinitions as emailDefinitions } from "./tools/email.js";
+const allDefinitions = calendarDefinitions.concat(emailDefinitions);
 const server = new McpServer({
     name: "secretaria",
     version: "1.0.0",

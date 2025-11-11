@@ -1,5 +1,5 @@
-import { ZodRawShape } from "zod";
 import { z } from "zod";
+import {} from "./interfaces.js";
 const calendar = {
     "2025-04-29": [{
             "title": "Reunião de Planejamento do Projeto",
