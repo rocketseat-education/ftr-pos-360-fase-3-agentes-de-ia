@@ -1,6 +1,7 @@
 import { Annotation, StateGraph, START, END } from "@langchain/langgraph";
 import { BaseMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { z } from "zod";
 import fs from "fs";
 import dotenv from "dotenv";
 
@@ -20,20 +21,37 @@ const State = Annotation.Root({
     nextNode: Annotation<string>,
     output: Annotation<BaseMessage[]>({
         reducer: (currOutput, newOutput) => currOutput.concat(newOutput),
-        default:  () => []
+        default: () => []
     }),
 });
+
+const routingTool = {
+    name: "routingTool",
+    description: "Selecione o próximo estado",
+    schema: z.object({
+        next: z.enum(["financial_specialist", "scheduling_specialist", "comms_specialist", "END"])
+    })
+}
 
 const supervisor = async (state: typeof State.State) => {
     console.log("Supervisor escolhendo o próximo");
 
-    const nextNode = await ai.invoke("Escolha um desses próximos estados: 'financial_specialist', 'scheduling_specialist', 'comms_specialist', END. Retorne apenas o nome do especialista e nada mais. Sem quebra de linha");
+    const aiWithTool = ai.bindTools([routingTool], {
+        tool_choice: "routingTool"
+    })
 
-    console.log(nextNode.content);
+    const aiResponse = await aiWithTool.invoke("Não preciso de mias nada, termine. Escolha um desses próximos estados: 'financial_specialist', 'scheduling_specialist', 'comms_specialist', END. Retorne apenas o nome do especialista e nada mais. Sem quebra de linha");
 
-    return{
-        nextNode: nextNode.content
+    if (aiResponse.tool_calls) {
+        return {
+            nextNode: aiResponse.tool_calls[0].args.next
+        }
+    } else {
+        return {
+            nextNode: END
+        }
     }
+
 }
 
 const financialSpecialist = (state: typeof State.State) => {
@@ -74,7 +92,7 @@ const graph = new StateGraph(State)
     .addEdge("comms_specialist", "supervisor")
     .compile()
 
-const result = await graph.invoke({ input: new HumanMessage("olá!")});
+const result = await graph.invoke({ input: new HumanMessage("olá!") });
 
 console.log(result);
 
