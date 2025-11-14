@@ -1,6 +1,15 @@
 import { Annotation, StateGraph, START, END } from "@langchain/langgraph";
 import { BaseMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import fs from "fs";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const ai = new ChatGoogleGenerativeAI({
+    model: "gemini-2.0-flash",
+    apiKey: process.env.GOOGLE_GENAI_API_KEY
+});
 
 const State = Annotation.Root({
     input: Annotation<HumanMessage>,
@@ -8,18 +17,23 @@ const State = Annotation.Root({
         reducer: (currExecuted, newExecution) => currExecuted + 1,
         default: () => 0
     }),
+    nextNode: Annotation<string>,
     output: Annotation<BaseMessage[]>({
         reducer: (currOutput, newOutput) => currOutput.concat(newOutput),
         default:  () => []
     }),
 });
 
-const supervisor = (state: typeof State.State) => {
+const supervisor = async (state: typeof State.State) => {
     console.log("Supervisor escolhendo o próximo");
-    return {
-        executedNodes: 1,
-        output: [new AIMessage("Olá da IA")],
-    };
+
+    const nextNode = await ai.invoke("Escolha um desses próximos estados: 'financial_specialist', 'scheduling_specialist', 'comms_specialist', END. Retorne apenas o nome do especialista e nada mais. Sem quebra de linha");
+
+    console.log(nextNode.content);
+
+    return{
+        nextNode: nextNode.content
+    }
 }
 
 const financialSpecialist = (state: typeof State.State) => {
@@ -53,15 +67,7 @@ const graph = new StateGraph(State)
     .addNode("comms_specialist", commsSpecialist)
     .addEdge(START, "supervisor")
     .addConditionalEdges("supervisor", (state: typeof State.State) => {
-        if(state.executedNodes == 0) {
-            return "financial_specialist";
-        }else if(state.executedNodes == 1){
-            return "scheduling_specialist";
-        }else if(state.executedNodes == 2){
-            return "comms_specialist";
-        }else{
-            return "END";
-        }
+        return state.nextNode;
     })
     .addEdge("financial_specialist", "supervisor")
     .addEdge("scheduling_specialist", "supervisor")
